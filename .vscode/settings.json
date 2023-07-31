@@ -1,3 +1,11 @@
 {
-  "Lua.diagnostics.globals": ["env"]
+  "Lua.diagnostics.globals": [
+    "env",
+    "timer",
+    "world",
+    "enum",
+    "Time",
+    "Unit",
+    "Weapon"
+  ]
 }
