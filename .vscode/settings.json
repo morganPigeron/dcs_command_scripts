@@ -6,6 +6,12 @@
     "enum",
     "Time",
     "Unit",
-    "Weapon"
+    "Weapon",
+    "missionCommands",
+    "Path",
+    "coalition",
+    "country",
+    "StaticObject",
+    "Group"
   ]
 }

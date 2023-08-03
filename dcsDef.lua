@@ -35,16 +35,3 @@ function timer.getAbsTime() end
 ---@return Time
 ---@meta
 function timer.getTime0() end
-
----@meta
-Event = {
-    id = enum
-    world.event,
-    time = Time,
-    initiator = Unit,
-    target = Unit,
-    place = Unit,
-    subPlace = enum
-    world.BirthPlace,
-    weapon = Weapon
-}
