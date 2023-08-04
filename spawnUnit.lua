@@ -1,7 +1,6 @@
-local log = env.info;
 local NBUNITSCREATED = 100;
 -- Returns: Unit (a table representing a unit)
-local function createUnit()
+local function createLAV25()
     return {
         ["visible"] = false,
         ["taskSelected"] = true,
@@ -55,11 +54,48 @@ local function setUnitName(unit, name)
     return unit
 end
 
-
-local function testSpawn(gs)
-    local newUnit = createUnit()
-    newUnit = setUnitPosition(newUnit, -288585.71428572, 616314.28571429)
+local function testSpawn(pos)
+    local newUnit = createLAV25()
+    newUnit = setUnitPosition(newUnit, pos.x, pos.y)
     newUnit = setUnitName(newUnit, "test")
     coalition.addGroup(country.id.USA, Group.Category.GROUND, newUnit)
 end
-missionCommands.addCommand("test spawn", nil, testSpawn, nil)
+missionCommands.addCommand("test spawn", nil, testSpawn, { x = 0, y = 0 })
+
+local e = {}
+function e:onEvent(event)
+    local m = {}
+    m[#m + 1] = "Event ID: "
+    m[#m + 1] = event.id
+    if event.initiator then
+        m[#m + 1] = "\nInitiator : "
+        m[#m + 1] = event.initiator:getPlayerName()
+    end
+    if event.weapon then
+        m[#m + 1] = "\nWeapon : "
+        m[#m + 1] = event.weapon:getTypeName()
+    end
+    if event.target then
+        m[#m + 1] = "\nTarget : "
+        m[#m + 1] = event.target:getName()
+    end
+
+
+    --comment change on map
+    if event.id == 26 then
+        if event.text then
+            m[#m + 1] = "\nText : "
+            m[#m + 1] = event.text
+        end
+
+        if event.pos then
+            m[#m + 1] = "\nPos : "
+            m[#m + 1] = event.pos.x .. " " .. event.pos.z
+
+            testSpawn({ x = event.pos.x, y = event.pos.z })
+        end
+    end
+    trigger.action.outText(table.concat(m), 60)
+end
+
+world.addEventHandler(e)

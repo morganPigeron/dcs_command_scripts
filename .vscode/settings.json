@@ -12,6 +12,7 @@
     "coalition",
     "country",
     "StaticObject",
-    "Group"
+    "Group",
+    "trigger"
   ]
 }
