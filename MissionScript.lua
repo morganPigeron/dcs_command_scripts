@@ -1,4 +1,5 @@
 local NBUNITSCREATED = 100;
+local DEBUG = false;
 -- Returns: Unit (a table representing a unit)
 local function createLAV25()
     return {
@@ -130,21 +131,13 @@ local function setUnitName(unit, name)
     return unit
 end
 
--- local function testSpawn(pos)
---     local newUnit = createLAV25()
---     newUnit = setUnitPosition(newUnit, pos.x, pos.y)
---     newUnit = setUnitName(newUnit, "test")
---     coalition.addGroup(country.id.USA, Group.Category.GROUND, newUnit)
--- end
--- missionCommands.addCommand("test spawn", nil, testSpawn, { x = 0, y = 0 })
-
 local function containsTextIgnoreCase(text, searchText)
     local lowercaseText = string.lower(text)
     local lowercaseSearchText = string.lower(searchText)
     return string.find(lowercaseText, lowercaseSearchText, 1, true) ~= nil
 end
 
-local function handleMarkChange(event)
+local function handleSpawnCommand(event)
     local unitCountry
     if event.coalition == coalition.side.RED then
         unitCountry = country.id.RUSSIA
@@ -153,9 +146,8 @@ local function handleMarkChange(event)
     else
         unitCountry = country.id.RUSSIA
     end
-
     if containsTextIgnoreCase(event.text, "LAV25") then
-        local newUnit = createLAV25() 
+        local newUnit = createLAV25()
         newUnit = setUnitPosition(newUnit, event.pos.x, event.pos.z)
         newUnit = setUnitName(newUnit, "unit")
         coalition.addGroup(unitCountry, Group.Category.GROUND, newUnit)
@@ -172,14 +164,27 @@ local function handleMarkChange(event)
     end
 end
 
-local e = {}
-function e:onEvent(event)
+local function handleScriptCommand(event)
+    if containsTextIgnoreCase(event.text, "DEBUG ON") then
+        DEBUG = true
+    elseif containsTextIgnoreCase(event.text, "DEBUG OFF") then
+        DEBUG = false
+    end
+end
+
+local function handleMarkChange(event)
+    handleSpawnCommand(event)
+    handleScriptCommand(event)
+end
+
+local eventHandler = {}
+function eventHandler:onEvent(event)
     local m = {}
     -- m[#m + 1] = "Event ID: "
     -- m[#m + 1] = event.id
     if event.initiator then
-         m[#m + 1] = "\nInitiator : "
-         m[#m + 1] = event.initiator:getTypeName()
+        m[#m + 1] = "\nInitiator : "
+        m[#m + 1] = event.initiator:getTypeName()
     end
     -- if event.weapon then
     --     m[#m + 1] = "\nWeapon : "
@@ -203,7 +208,10 @@ function e:onEvent(event)
 
         handleMarkChange(event)
     end
-    trigger.action.outText(table.concat(m), 60)
+
+    if DEBUG then
+        trigger.action.outText(table.concat(m), 60)
+    end
 end
 
-world.addEventHandler(e)
+world.addEventHandler(eventHandler)
