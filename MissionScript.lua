@@ -1,10 +1,11 @@
 -- GLOBAL
+local MissionScript = {}
 local NB_UNITS_CREATED = 100
 local DEBUG = false
 -- GLOBAL END
 
 -- Generic Functions
-local function setUnitPosition(unit, x, y)
+function MissionScript.setUnitPosition(unit, x, y)
     unit.units[1].x = x
     unit.units[1].y = y
     unit.x = x
@@ -112,7 +113,7 @@ end
 function GROUND_UNIT:spawn(unitName, x, y, unitCountryId)
     if self:isUnitExist(unitName) then
         local newUnit = self:create(unitName)
-        newUnit = setUnitPosition(newUnit, x, y)
+        newUnit = MissionScript.setUnitPosition(newUnit, x, y)
         newUnit = setUnitName(newUnit, "unit")
         coalition.addGroup(unitCountryId, Group.Category.GROUND, newUnit)
     end
@@ -196,3 +197,5 @@ function eventHandler:onEvent(event)
 end
 
 world.addEventHandler(eventHandler)
+
+return MissionScript
