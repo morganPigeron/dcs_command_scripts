@@ -3,27 +3,52 @@ local NB_UNITS_CREATED = 100
 local DEBUG = false
 -- GLOBAL END
 
-local GROUND_UNIT_LIST = {}
+-- Generic Functions
+local function setUnitPosition(unit, x, y)
+    unit.units[1].x = x
+    unit.units[1].y = y
+    unit.x = x
+    unit.y = y
+    return unit
+end
+
+local function setUnitName(unit, name)
+    unit.units[1].unitId = NB_UNITS_CREATED
+    unit.units[1].name = name .. NB_UNITS_CREATED
+    unit.name = "group-" .. name .. NB_UNITS_CREATED
+    NB_UNITS_CREATED = NB_UNITS_CREATED + 1
+    return unit
+end
+
+local function containsTextIgnoreCase(text, searchText)
+    local lowercaseText = string.lower(text)
+    local lowercaseSearchText = string.lower(searchText)
+    return string.find(lowercaseText, lowercaseSearchText, 1, true) ~= nil
+end
+-- Generic Functions END
+
+
+local GROUND_UNIT = {}
 -- Function to add unitName-dcsName pairs to the table
-function GROUND_UNIT_LIST:addUnitPair(unitName, dcsName)
+function GROUND_UNIT:addUnitPair(unitName, dcsName)
     local name = string.upper(unitName)
     self[name] = dcsName
 end
 
 -- Function to get dcsName from unitName
-function GROUND_UNIT_LIST:getDCSName(unitName)
+function GROUND_UNIT:getDCSName(unitName)
     local name = string.upper(unitName)
     return self[name]
 end
 
 -- Function to check if unitName exist
-function GROUND_UNIT_LIST:isUnitExist(unitName)
+function GROUND_UNIT:isUnitExist(unitName)
     local name = string.upper(unitName)
     return self[name] ~= nil
 end
 
--- Function to create unit, must check if exist before! //TODO tell dont ask ... we want it to be spawn at the end
-function GROUND_UNIT_LIST:create(unitName)
+-- Function to create unit, must check if exist before!
+function GROUND_UNIT:create(unitName)
     local dcsName = self:getDCSName(unitName)
     return {
         ["visible"] = false,
@@ -62,146 +87,18 @@ function GROUND_UNIT_LIST:create(unitName)
     } -- end of [1]
 end
 
-GROUND_UNIT_LIST:addUnitPair("LAV25", "LAV25")
-GROUND_UNIT_LIST:addUnitPair("MORTIER", "2B11 mortar")
-GROUND_UNIT_LIST:addUnitPair("IGLA", "SA-18 Igla manpad")
-
--- Returns: Unit (a table representing a unit)
-local function createLAV25()
-    return {
-        ["visible"] = false,
-        ["taskSelected"] = true,
-        ["route"] =
-        {
-        }, -- end of ["route"]
-        ["groupId"] = 2,
-        ["tasks"] =
-        {
-        }, -- end of ["tasks"]
-        ["hidden"] = false,
-        ["units"] =
-        {
-            [1] =
-            {
-                ["type"] = "LAV-25",
-                ["transportable"] =
-                {
-                    ["randomTransportable"] = false,
-                }, -- end of ["transportable"]
-                ["unitId"] = 2,
-                ["skill"] = "Average",
-                ["y"] = 0,
-                ["x"] = 0,
-                ["name"] = "Ground Unit1",
-                ["playerCanDrive"] = true,
-                ["heading"] = 0,
-            }, -- end of [1]
-        },     -- end of ["units"]
-        ["y"] = 0,
-        ["x"] = 0,
-        ["name"] = "Ground Group",
-        ["start_time"] = 0,
-        ["task"] = "Ground Nothing",
-    } -- end of [1]
+function GROUND_UNIT:spawn(unitName, x, y, unitCountry)
+    if self:isUnitExist(unitName) then
+        local newUnit = self:create(unitName)
+        newUnit = setUnitPosition(newUnit, x, y)
+        newUnit = setUnitName(newUnit, "unit")
+        coalition.addGroup(unitCountry, Group.Category.GROUND, newUnit)
+    end
 end
 
-local function createMortar()
-    return {
-        ["visible"] = false,
-        ["taskSelected"] = true,
-        ["route"] =
-        {
-        }, -- end of ["route"]
-        ["groupId"] = 2,
-        ["tasks"] =
-        {
-        }, -- end of ["tasks"]
-        ["hidden"] = false,
-        ["units"] =
-        {
-            [1] =
-            {
-                ["type"] = "2B11 mortar",
-                ["transportable"] =
-                {
-                    ["randomTransportable"] = false,
-                }, -- end of ["transportable"]
-                ["unitId"] = 2,
-                ["skill"] = "Average",
-                ["y"] = 0,
-                ["x"] = 0,
-                ["name"] = "Ground Unit1",
-                ["playerCanDrive"] = true,
-                ["heading"] = 0,
-            }, -- end of [1]
-        },     -- end of ["units"]
-        ["y"] = 0,
-        ["x"] = 0,
-        ["name"] = "Ground Group",
-        ["start_time"] = 0,
-        ["task"] = "Ground Nothing",
-    } -- end of [1]
-end
-
-local function createIGLA()
-    return {
-        ["visible"] = false,
-        ["taskSelected"] = true,
-        ["route"] =
-        {
-        }, -- end of ["route"]
-        ["groupId"] = 2,
-        ["tasks"] =
-        {
-        }, -- end of ["tasks"]
-        ["hidden"] = false,
-        ["units"] =
-        {
-            [1] =
-            {
-                ["type"] = "SA-18 Igla manpad",
-                ["transportable"] =
-                {
-                    ["randomTransportable"] = false,
-                }, -- end of ["transportable"]
-                ["unitId"] = 2,
-                ["skill"] = "Average",
-                ["y"] = 0,
-                ["x"] = 0,
-                ["name"] = "Ground Unit1",
-                ["playerCanDrive"] = true,
-                ["heading"] = 0,
-            }, -- end of [1]
-        },     -- end of ["units"]
-        ["y"] = 0,
-        ["x"] = 0,
-        ["name"] = "Ground Group",
-        ["start_time"] = 0,
-        ["task"] = "Ground Nothing",
-    } -- end of [1]
-end
-
-local function setUnitPosition(unit, x, y)
-    unit.units[1].x = x
-    unit.units[1].y = y
-    unit.x = x
-    unit.y = y
-    return unit
-end
-
-local function setUnitName(unit, name)
-    unit.units[1].unitId = NB_UNITS_CREATED
-    unit.units[1].name = name .. NB_UNITS_CREATED
-    unit.name = "group-" .. name .. NB_UNITS_CREATED
-    NB_UNITS_CREATED = NB_UNITS_CREATED + 1
-    return unit
-end
-
-local function containsTextIgnoreCase(text, searchText)
-    local lowercaseText = string.lower(text)
-    local lowercaseSearchText = string.lower(searchText)
-    return string.find(lowercaseText, lowercaseSearchText, 1, true) ~= nil
-end
+GROUND_UNIT:addUnitPair("LAV25", "LAV-25")
+GROUND_UNIT:addUnitPair("MORTIER", "2B11 mortar")
+GROUND_UNIT:addUnitPair("IGLA", "SA-18 Igla manpad")
 
 local function handleSpawnCommand(event)
     local unitCountry
@@ -213,29 +110,7 @@ local function handleSpawnCommand(event)
         unitCountry = country.id.RUSSIA
     end
 
-    if GROUND_UNIT_LIST:isUnitExist(event.text) then
-        local newUnit = GROUND_UNIT_LIST:create(event.text)
-        newUnit = setUnitPosition(newUnit, event.pos.x, event.pos.z)
-        newUnit = setUnitName(newUnit, "unit")
-        coalition.addGroup(unitCountry, Group.Category.GROUND, newUnit)
-    end
-
-    -- if containsTextIgnoreCase(event.text, "LAV25") then
-    --     local newUnit = createLAV25()
-    --     newUnit = setUnitPosition(newUnit, event.pos.x, event.pos.z)
-    --     newUnit = setUnitName(newUnit, "unit")
-    --     coalition.addGroup(unitCountry, Group.Category.GROUND, newUnit)
-    -- elseif containsTextIgnoreCase(event.text, "MORTIER") then
-    --     local newUnit = createMortar()
-    --     newUnit = setUnitPosition(newUnit, event.pos.x, event.pos.z)
-    --     newUnit = setUnitName(newUnit, "unit")
-    --     coalition.addGroup(unitCountry, Group.Category.GROUND, newUnit)
-    -- elseif containsTextIgnoreCase(event.text, "IGLA") then
-    --     local newUnit = createIGLA()
-    --     newUnit = setUnitPosition(newUnit, event.pos.x, event.pos.z)
-    --     newUnit = setUnitName(newUnit, "unit")
-    --     coalition.addGroup(unitCountry, Group.Category.GROUND, newUnit)
-    -- end
+    GROUND_UNIT:spawn(event.text, event.pos.x, event.pos.z, unitCountry)
 end
 
 local function handleScriptCommand(event)
@@ -251,6 +126,8 @@ local function handleMarkChange(event)
     handleScriptCommand(event)
 end
 
+
+-- Entry point
 local eventHandler = {}
 function eventHandler:onEvent(event)
     local m = {}
