@@ -25,6 +25,27 @@ local function containsTextIgnoreCase(text, searchText)
     local lowercaseSearchText = string.lower(searchText)
     return string.find(lowercaseText, lowercaseSearchText, 1, true) ~= nil
 end
+
+local function printTable(title, rows)
+    local m = {}
+    m[#m + 1] = "\n" .. title .. ": \n"
+    for _, row in ipairs(rows) do
+        m[#m + 1] = row .. "\n"
+    end
+    trigger.action.outText(table.concat(m), 60)
+end
+
+local function getCountryIdFromCoalition(event)
+    local unitCountry
+    if event.coalition == coalition.side.RED then
+        unitCountry = country.id.RUSSIA
+    elseif event.coalition == coalition.side.BLUE then
+        unitCountry = country.id.USA
+    else
+        unitCountry = country.id.RUSSIA
+    end
+    return unitCountry
+end
 -- Generic Functions END
 
 
@@ -87,30 +108,28 @@ function GROUND_UNIT:create(unitName)
     } -- end of [1]
 end
 
-function GROUND_UNIT:spawn(unitName, x, y, unitCountry)
+-- Function to spawn unit at x and y position with a certain country
+function GROUND_UNIT:spawn(unitName, x, y, unitCountryId)
     if self:isUnitExist(unitName) then
         local newUnit = self:create(unitName)
         newUnit = setUnitPosition(newUnit, x, y)
         newUnit = setUnitName(newUnit, "unit")
-        coalition.addGroup(unitCountry, Group.Category.GROUND, newUnit)
+        coalition.addGroup(unitCountryId, Group.Category.GROUND, newUnit)
     end
 end
 
-GROUND_UNIT:addUnitPair("LAV25", "LAV-25")
-GROUND_UNIT:addUnitPair("MORTIER", "2B11 mortar")
-GROUND_UNIT:addUnitPair("IGLA", "SA-18 Igla manpad")
+function GROUND_UNIT:getAllSpawnableUnits()
+    local units = {}
+    for unitName, value in pairs(self) do
+        if type(value) ~= "function" then
+            table.insert(units, " - " .. unitName .. " => " .. value)
+        end
+    end
+    return units
+end
 
 local function handleSpawnCommand(event)
-    local unitCountry
-    if event.coalition == coalition.side.RED then
-        unitCountry = country.id.RUSSIA
-    elseif event.coalition == coalition.side.BLUE then
-        unitCountry = country.id.USA
-    else
-        unitCountry = country.id.RUSSIA
-    end
-
-    GROUND_UNIT:spawn(event.text, event.pos.x, event.pos.z, unitCountry)
+    GROUND_UNIT:spawn(event.text, event.pos.x, event.pos.z, getCountryIdFromCoalition(event))
 end
 
 local function handleScriptCommand(event)
@@ -118,6 +137,10 @@ local function handleScriptCommand(event)
         DEBUG = true
     elseif containsTextIgnoreCase(event.text, "DEBUG OFF") then
         DEBUG = false
+    elseif containsTextIgnoreCase(event.text, "DEBUG") then
+        DEBUG = not DEBUG
+    elseif containsTextIgnoreCase(event.text, "list") or containsTextIgnoreCase(event.text, "liste") then
+        printTable("Liste", GROUND_UNIT:getAllSpawnableUnits())
     end
 end
 
@@ -128,6 +151,13 @@ end
 
 
 -- Entry point
+GROUND_UNIT:addUnitPair("LAV25", "LAV-25")
+GROUND_UNIT:addUnitPair("MORTIER", "2B11 mortar")
+GROUND_UNIT:addUnitPair("IGLA", "SA-18 Igla manpad")
+GROUND_UNIT:addUnitPair("BTR", "BTR-80")
+GROUND_UNIT:addUnitPair("TUNGUSKA", "2S6 Tunguska")
+GROUND_UNIT:addUnitPair("SHILKA", "ZSU-23-4 Shilka")
+
 local eventHandler = {}
 function eventHandler:onEvent(event)
     local m = {}
