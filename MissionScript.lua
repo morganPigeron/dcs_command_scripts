@@ -239,13 +239,13 @@ local function testSpawnHeli(event)
                 [1] =
                 {
                     ["alt"] = 0,
-                    ["type"] = "TakeOffParking",
-                    ["action"] = "From Parking Area",
+                    ["type"] = "TakeOffGround",
+                    ["action"] = "From Ground Area",
                     ["alt_type"] = "BARO",
-                    ["form"] = "From Parking Area",
-                    ["y"] = event.pos.y,
+                    ["form"] = "Turning Point",
+                    ["y"] = event.pos.z,
                     ["x"] = event.pos.x,
-                    ["speed"] = 0,
+                    ["speed"] = 41.666666666667,
                     ["task"] =
                     {
                         ["id"] = "ComboTask",
@@ -256,7 +256,6 @@ local function testSpawnHeli(event)
                             }, -- end of ["tasks"]
                         }, -- end of ["params"]
                     }, -- end of ["task"]
-                    ["helipadId"] = 12,
                 }, -- end of [1]
                 [2] =
                 {
@@ -265,8 +264,8 @@ local function testSpawnHeli(event)
                     ["action"] = "Turning Point",
                     ["alt_type"] = "BARO",
                     ["form"] = "Turning Point",
-                    ["y"] = event.pos.y,
-                    ["x"] = event.pos.x,
+                    ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
+                    ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
                     ["speed"] = 41.666666666667,
                     ["task"] =
                     {
@@ -281,33 +280,12 @@ local function testSpawnHeli(event)
                 }, -- end of [2]
                 [3] =
                 {
-                    ["alt"] = 200,
-                    ["type"] = "Turning Point",
-                    ["action"] = "Turning Point",
-                    ["alt_type"] = "BARO",
-                    ["form"] = "Turning Point",
-                    ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.y,
-                    ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
-                    ["speed"] = 41.666666666667,
-                    ["task"] =
-                    {
-                        ["id"] = "ComboTask",
-                        ["params"] =
-                        {
-                            ["tasks"] =
-                            {
-                            }, -- end of ["tasks"]
-                        }, -- end of ["params"]
-                    }, -- end of ["task"]
-                }, -- end of [3]
-                [4] =
-                {
                     ["alt"] = 13,
                     ["type"] = "Land",
                     ["action"] = "Landing",
                     ["alt_type"] = "BARO",
                     ["form"] = "Landing",
-                    ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.y,
+                    ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
                     ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
                     ["speed"] = 41.666666666667,
                     ["task"] =
@@ -321,7 +299,7 @@ local function testSpawnHeli(event)
                         }, -- end of ["params"]
                     }, -- end of ["task"]
                     ["airdromeId"] = 23,
-                }, -- end of [4]
+                }, -- end of [3]
             }, -- end of ["points"]
         }, -- end of ["route"]
         ["hidden"] = false,
@@ -329,14 +307,14 @@ local function testSpawnHeli(event)
         {
             [1] =
             {
-                ["alt"] = 15,
-                ["hardpoint_racks"] = true,
+                ["alt"] = 0,
+                ["hardpoint_racks"] = false,
                 ["alt_type"] = "BARO",
                 ["livery_id"] = "Mi-17 CIA Afghanistan",
                 ["skill"] = "High",
                 ["parking"] = "1",
                 ["ropeLength"] = 15,
-                ["speed"] = 41.666666666667,
+                ["speed"] = 0,
                 ["AddPropAircraft"] =
                 {
                     ["ExhaustScreen"] = false,
@@ -369,62 +347,11 @@ local function testSpawnHeli(event)
                     [3] = 1,
                 }, -- end of ["callsign"]
                 ["heading"] = -2.6422217449925,
-                ["y"] = event.pos.y,
+                ["y"] = event.pos.z,
                 ["x"] = event.pos.x,
             }, -- end of [1]
-            [2] =
-            {
-                ["alt"] = 10,
-                ["hardpoint_racks"] = true,
-                ["alt_type"] = "BARO",
-                ["livery_id"] = "USA_AFG",
-                ["skill"] = "High",
-                ["ropeLength"] = 15,
-                ["speed"] = 41.666666666667,
-                ["AddPropAircraft"] =
-                {
-                    ["ExhaustScreen"] = false,
-                    ["CargoHalfdoor"] = true,
-                    ["GunnersAISkill"] = 90,
-                    ["AdditionalArmor"] = true,
-                    ["NS430allow"] = false,
-                }, -- end of ["AddPropAircraft"]
-                ["type"] = "Mi-8MT",
-                ["unitId"] = 14,
-                ["psi"] = 2.6422217449925,
-                ["y"] = event.pos.y,
-                ["x"] = event.pos.x,
-                ["name"] = "Rotary-1-2",
-                ["payload"] =
-                {
-                    ["pylons"] =
-                    {
-                        [7] =
-                        {
-                            ["CLSID"] = "KORD_12_7",
-                        }, -- end of [7]
-                        [8] =
-                        {
-                            ["CLSID"] = "PKT_7_62",
-                        }, -- end of [8]
-                    }, -- end of ["pylons"]
-                    ["fuel"] = "1929",
-                    ["flare"] = 128,
-                    ["chaff"] = 0,
-                    ["gun"] = 100,
-                }, -- end of ["payload"]
-                ["onboard_num"] = "051",
-                ["callsign"] =
-                {
-                    [1] = 2,
-                    [2] = 1,
-                    ["name"] = "Springfield12",
-                    [3] = 2,
-                }, -- end of ["callsign"]
-                ["heading"] = -2.6422217449925,
-            }, -- end of [2]
         }, -- end of ["units"]
-        ["y"] = event.pos.y,
+        ["y"] = event.pos.z,
         ["x"] = event.pos.x,
         ["radioSet"] = false,
         ["name"] = "Rotary-1",
@@ -523,7 +450,6 @@ MissionScript.GROUND_UNIT:addUnitPair("BTR", "BTR-80")
 MissionScript.GROUND_UNIT:addUnitPair("TUNGUSKA", "2S6 Tunguska")
 MissionScript.GROUND_UNIT:addUnitPair("SHILKA", "ZSU-23-4 Shilka")
 
-MissionScript.MARKER_TABLE:addMarker({idx = 1, text = "init", pos = {x=0,y=0,z=0}})
 local eventHandler = {}
 function eventHandler:onEvent(event)
 
