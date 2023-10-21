@@ -2,10 +2,27 @@
 -- GLOBAL
 -- ***********************************
 
-local MissionScript = {}
-MissionScript.GROUND_UNIT = {}
-MissionScript.NB_UNITS_CREATED = 100
 local DEBUG = false
+local MissionScript = {}
+
+MissionScript.GROUND_UNIT = {}
+
+-- Global counter to track number of unit spawned by this script
+MissionScript.NB_UNITS_CREATED = 0
+
+-- hold a table with all marker, text in position.
+-- goal is to reuse a certain marker to access its position.
+-- Ex navigate to marker "point B"
+MissionScript.MARKER_TABLE = {}
+
+local function logger(log)
+    if type(log) == "string" then
+        log = {log} -- Wrap the string in a table
+    end
+    if #log > 0 then
+        trigger.action.outText(table.concat(log), 60)
+    end
+end
 
 -- ***********************************
 -- GLOBAL END
@@ -66,6 +83,58 @@ end
 
 -- ***********************************
 -- MissionScript related methods END
+-- ***********************************
+
+-- *********************************** 
+-- MARKER_TABLE related methods
+-- ***********************************
+
+-- add marker to table
+-- looks like there is no way to get remove event
+-- so I will remove old one if text is equivalent
+function MissionScript.MARKER_TABLE:addMarker(marker_event)
+
+    self[marker_event.idx] = {text = marker_event.text, pos = marker_event.pos}
+end
+
+-- modify existing marker
+function MissionScript.MARKER_TABLE:modifyMarker(marker_event)
+    self[marker_event.idx] = {text = marker_event.text, pos = marker_event.pos}
+end
+
+-- find marker by text
+-- will find the one with higest id wich is the last one with this text
+function MissionScript.MARKER_TABLE:findMarkerByText(searchText)
+    local highestId = -1
+    local highestIdData = nil
+
+    for id, markerData in pairs(self) do
+        -- in lua function are also in pairs self ...
+        if type(markerData) == "table" then
+            if markerData.text == searchText and id > highestId then
+                highestId = id
+                highestIdData = markerData
+            end
+        end
+    end
+
+    return highestIdData
+end
+
+-- print marker
+function MissionScript.MARKER_TABLE:print()
+    local log = {}
+    for id, markerData in pairs(self) do
+        -- in lua function are also in pairs self ...
+        if type(markerData) == "table" then
+            log[#log+1] = "\nMarker id: " .. id .. " " .. markerData.text
+        end
+    end
+    logger(log)
+end
+
+-- *********************************** 
+-- MARKER_TABLE related methods END
 -- ***********************************
 
 -- *********************************** 
@@ -154,10 +223,6 @@ end
 -- GROUND_UNIT related methods END
 -- ***********************************
 
-local function handleSpawnCommand(event)
-    MissionScript.GROUND_UNIT:spawn(event.text, event.pos.x, event.pos.z, MissionScript.getCountryIdFromCoalition(event))
-end
-
 local function testSpawnHeli(event)
     local heli =
     {
@@ -173,14 +238,14 @@ local function testSpawnHeli(event)
             {
                 [1] =
                 {
-                    ["alt"] = 10,
+                    ["alt"] = 0,
                     ["type"] = "TakeOffParking",
                     ["action"] = "From Parking Area",
                     ["alt_type"] = "BARO",
                     ["form"] = "From Parking Area",
-                    ["y"] = 622076.61801342,
-                    ["x"] = -267973.77528983,
-                    ["speed"] = 41.666666666667,
+                    ["y"] = event.pos.y,
+                    ["x"] = event.pos.x,
+                    ["speed"] = 0,
                     ["task"] =
                     {
                         ["id"] = "ComboTask",
@@ -195,13 +260,13 @@ local function testSpawnHeli(event)
                 }, -- end of [1]
                 [2] =
                 {
-                    ["alt"] = 2000,
+                    ["alt"] = 200,
                     ["type"] = "Turning Point",
                     ["action"] = "Turning Point",
                     ["alt_type"] = "BARO",
                     ["form"] = "Turning Point",
-                    ["y"] = 615899.60909444,
-                    ["x"] = -279297.64010796,
+                    ["y"] = event.pos.y,
+                    ["x"] = event.pos.x,
                     ["speed"] = 41.666666666667,
                     ["task"] =
                     {
@@ -216,13 +281,13 @@ local function testSpawnHeli(event)
                 }, -- end of [2]
                 [3] =
                 {
-                    ["alt"] = 2000,
+                    ["alt"] = 200,
                     ["type"] = "Turning Point",
                     ["action"] = "Turning Point",
                     ["alt_type"] = "BARO",
                     ["form"] = "Turning Point",
-                    ["y"] = 629730.91889102,
-                    ["x"] = -278300.78895145,
+                    ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.y,
+                    ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
                     ["speed"] = 41.666666666667,
                     ["task"] =
                     {
@@ -242,8 +307,8 @@ local function testSpawnHeli(event)
                     ["action"] = "Landing",
                     ["alt_type"] = "BARO",
                     ["form"] = "Landing",
-                    ["y"] = 647279.46875,
-                    ["x"] = -281782.46875,
+                    ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.y,
+                    ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
                     ["speed"] = 41.666666666667,
                     ["task"] =
                     {
@@ -264,7 +329,7 @@ local function testSpawnHeli(event)
         {
             [1] =
             {
-                ["alt"] = 10,
+                ["alt"] = 15,
                 ["hardpoint_racks"] = true,
                 ["alt_type"] = "BARO",
                 ["livery_id"] = "Mi-17 CIA Afghanistan",
@@ -284,7 +349,6 @@ local function testSpawnHeli(event)
                 ["unitId"] = 13,
                 ["psi"] = 2.6422217449925,
                 ["parking_id"] = "1",
-                ["x"] = -267973.77528983,
                 ["name"] = "Rotary-1-1",
                 ["payload"] =
                 {
@@ -305,7 +369,8 @@ local function testSpawnHeli(event)
                     [3] = 1,
                 }, -- end of ["callsign"]
                 ["heading"] = -2.6422217449925,
-                ["y"] = 622076.61801342,
+                ["y"] = event.pos.y,
+                ["x"] = event.pos.x,
             }, -- end of [1]
             [2] =
             {
@@ -318,17 +383,17 @@ local function testSpawnHeli(event)
                 ["speed"] = 41.666666666667,
                 ["AddPropAircraft"] =
                 {
-                    ["ExhaustScreen"] = true,
+                    ["ExhaustScreen"] = false,
                     ["CargoHalfdoor"] = true,
                     ["GunnersAISkill"] = 90,
                     ["AdditionalArmor"] = true,
-                    ["NS430allow"] = true,
+                    ["NS430allow"] = false,
                 }, -- end of ["AddPropAircraft"]
                 ["type"] = "Mi-8MT",
                 ["unitId"] = 14,
                 ["psi"] = 2.6422217449925,
-                ["y"] = 622116.61801342,
-                ["x"] = -268013.77528983,
+                ["y"] = event.pos.y,
+                ["x"] = event.pos.x,
                 ["name"] = "Rotary-1-2",
                 ["payload"] =
                 {
@@ -359,11 +424,11 @@ local function testSpawnHeli(event)
                 ["heading"] = -2.6422217449925,
             }, -- end of [2]
         }, -- end of ["units"]
-        ["y"] = 622076.61801342,
+        ["y"] = event.pos.y,
+        ["x"] = event.pos.x,
         ["radioSet"] = false,
         ["name"] = "Rotary-1",
         ["communication"] = true,
-        ["x"] = -267973.77528983,
         ["start_time"] = 0,
         ["task"] = "Transport",
         ["uncontrolled"] = false,
@@ -376,27 +441,70 @@ end
 -- Command handling related methods 
 -- ***********************************
 
+-- debug method to print event as a table in logger
+local function printTable(event, log)
+    for key, value in pairs(event) do
+        log[#log+1] = "\n" .. key .. " : " .. tostring(value)
+    end
+end
+
 local function handleSpawnCommand(event)
     MissionScript.GROUND_UNIT:spawn(event.text, event.pos.x, event.pos.z, MissionScript.getCountryIdFromCoalition(event))
 end
 
 local function handleScriptCommand(event)
+
     if MissionScript.containsTextIgnoreCase(event.text, "DEBUG ON") then
         DEBUG = true
+
     elseif MissionScript.containsTextIgnoreCase(event.text, "DEBUG OFF") then
         DEBUG = false
+
     elseif MissionScript.containsTextIgnoreCase(event.text, "DEBUG") then
         DEBUG = not DEBUG
+
     elseif MissionScript.containsTextIgnoreCase(event.text, "list") or MissionScript.containsTextIgnoreCase(event.text, "liste") then
         MissionScript.printTable("Liste", MissionScript.GROUND_UNIT:getAllSpawnableUnits())
+
     elseif MissionScript.containsTextIgnoreCase(event.text, "heli") then
-        testSpawnHeli()
+        testSpawnHeli(event)
+
+    elseif MissionScript.containsTextIgnoreCase(event.text, "marker") then
+        MissionScript.MARKER_TABLE:print()
     end
 end
 
 local function handleMarkChange(event)
+    MissionScript.MARKER_TABLE:modifyMarker(event)
     handleSpawnCommand(event)
     handleScriptCommand(event)
+end
+
+local function handleMarkAdd(event)
+    MissionScript.MARKER_TABLE:addMarker(event)
+end
+
+
+local function handleDebug(event)
+    local log = {}
+    log[#log+1] = "\n*** event id => " .. event.id .. " ***"
+
+    if event.id == world.event.S_EVENT_MARK_CHANGE then
+        log[#log+1] = "\n--- Event mark change --- "
+        printTable(event, log)
+    end
+
+    if event.id == world.event.S_EVENT_MARK_ADDED then
+        log[#log+1] = "\n--- Event mark added --- "
+        printTable(event, log)
+    end
+
+    if event.id == world.event.S_EVENT_MARK_REMOVE then
+        log[#log+1] = "\n--- Event mark remove --- "
+        printTable(event, log)
+    end
+
+    logger(log)
 end
 
 -- *********************************** 
@@ -415,40 +523,20 @@ MissionScript.GROUND_UNIT:addUnitPair("BTR", "BTR-80")
 MissionScript.GROUND_UNIT:addUnitPair("TUNGUSKA", "2S6 Tunguska")
 MissionScript.GROUND_UNIT:addUnitPair("SHILKA", "ZSU-23-4 Shilka")
 
+MissionScript.MARKER_TABLE:addMarker({idx = 1, text = "init", pos = {x=0,y=0,z=0}})
 local eventHandler = {}
 function eventHandler:onEvent(event)
-    local m = {}
-    -- m[#m + 1] = "Event ID: "
-    -- m[#m + 1] = event.id
-    if event.initiator then
-        m[#m + 1] = "\nInitiator : "
-        m[#m + 1] = event.initiator:getTypeName()
-    end
-    -- if event.weapon then
-    --     m[#m + 1] = "\nWeapon : "
-    --     m[#m + 1] = event.weapon:getTypeName()
-    -- end
-    -- if event.target then
-    --    m[#m + 1] = "\nTarget : "
-    --    m[#m + 1] = event.target:getName()
-    -- end
 
     if event.id == world.event.S_EVENT_MARK_CHANGE then
-        if event.text then
-            m[#m + 1] = "\nText : "
-            m[#m + 1] = event.text
-        end
-
-        if event.pos then
-            m[#m + 1] = "\nPos : "
-            m[#m + 1] = event.pos.x .. " " .. event.pos.z
-        end
-
         handleMarkChange(event)
     end
 
+    if event.id == world.event.S_EVENT_MARK_ADDED then
+        handleMarkAdd(event)
+    end
+
     if DEBUG then
-        trigger.action.outText(table.concat(m), 60)
+        handleDebug(event)
     end
 end
 
