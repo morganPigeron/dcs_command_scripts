@@ -3,3 +3,15 @@ https://wiki.hoggitworld.com/view/Simulator_Scripting_Engine_Documentation
 https://github.com/bluebird75/luaunit
 
 lua testSuite.lua
+
+
+
+TODO 
+
+[ ] - able to set livery, livery name is not the same as in game one 
+[ ] - able to set WP1 and WP2 before spawn
+[x] - able to spawn heli
+[x] - able to spawn heli depending on coallition
+[ ] - able to spawn heli with troop inside
+[ ] - able keep in map all marker, add, remove, modify
+
