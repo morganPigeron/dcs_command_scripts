@@ -31,8 +31,8 @@ end
 MissionScript.TEMPLATE = {}
 -- https://wiki.hoggitworld.com/view/DCS_func_addGroup
 MissionScript.TEMPLATE["GroupGround"] = {
-    name = nil, -- required 
-    task = nil, -- required 
+    name = "Ground Group",
+    task = "Ground Nothing",
     groupId = nil,
     start_time = nil,
     lateActivation = nil,
@@ -45,8 +45,8 @@ MissionScript.TEMPLATE["GroupGround"] = {
 }
 
 MissionScript.TEMPLATE["GroupAir"] = {
-    name = nil, -- required 
-    task = nil, -- required 
+    name = "Air Group",
+    task = "Air Nothing",
     groupId = nil,
     start_time = nil,
     lateActivation = nil,
@@ -61,10 +61,10 @@ MissionScript.TEMPLATE["GroupAir"] = {
 }
 
 MissionScript.TEMPLATE["UnitAir"] = {
-    name = nil, --required
-    type = nil, --required
-    x = nil, --required
-    y = nil, --required
+    name = "unit air", --required
+    type = "unit air", --required
+    x = 0, --required
+    y = 0, --required
     alt = nil, --required
     alt_type = nil, --required 
     speed = nil, --required
@@ -80,10 +80,10 @@ MissionScript.TEMPLATE["UnitAir"] = {
 }
 
 MissionScript.TEMPLATE["UnitGround"] = {
-    name = nil, --required
-    type = nil, --required
-    x = nil, --required
-    y = nil, --required
+    name = "unit ground", --required
+    type = "unit ground", --required
+    x = 0, --required
+    y = 0, --required
     unitId = nil,
     heading = nil,
     skill = nil,
@@ -163,16 +163,20 @@ end
 function MissionScript.TEMPLATE:GenerateUnitOrGroup(templateName, parameters)
     local template = self[templateName]
 
-    if template then
-        local newUnitOrGroup = {}
-        for key, value in pairs(template) do
-            -- Check if the parameter is provided, otherwise, use the template value
-            newUnitOrGroup[key] = parameters[key] or value
-        end
-        return newUnitOrGroup
-    else
-        return nil  -- Return nil or handle the error as needed
+    local newUnitOrGroup = {}
+    for key, value in pairs(template) do
+        -- Check if the parameter is provided, otherwise, use the template value
+        newUnitOrGroup[key] = parameters[key] or value
     end
+    return newUnitOrGroup
+end
+
+function MissionScript.TEMPLATE:newGround(parameters)
+    return self:GenerateUnitOrGroup("GroupGround", parameters)
+end
+
+function MissionScript.TEMPLATE:newUnit(parameters)
+    return self:GenerateUnitOrGroup("UnitGround", parameters)
 end
 
 -- *********************************** 
@@ -255,31 +259,11 @@ end
 -- Function to create unit, must check if exist before!
 function MissionScript.GROUND_UNIT:create(unitName)
     local dcsName = self:getDCSName(unitName)
-    return {
-        ["visible"] = false,
-        ["route"] =
-        {
-        }, -- end of ["route"]
-        ["tasks"] =
-        {
-        }, -- end of ["tasks"]
-        ["units"] =
-        {
-            [1] =
-            {
-                ["type"] = dcsName,
-                ["skill"] = "Average",
-                ["y"] = 0,
-                ["x"] = 0,
-                ["name"] = "Ground Unit1",
-                ["playerCanDrive"] = true,
-            }, -- end of [1]
-        },     -- end of ["units"]
-        ["y"] = 0,
-        ["x"] = 0,
-        ["name"] = "Ground Group",
-        ["task"] = "Ground Nothing",
-    } -- end of [1]
+    local group = MissionScript.TEMPLATE:newGround({})
+    local unit = MissionScript.TEMPLATE:newUnit({type = dcsName})
+    group.units = {}
+    group.units[1] = unit
+    return group
 end
 
 -- Function to spawn unit at x and y position with a certain country
@@ -309,7 +293,7 @@ end
 -- NEED invisible FARP to land
 local function testSpawnFARP(event)
 
-    groundExam =
+    local groundExam =
     {
         ["visible"] = false,
         ["taskSelected"] = true,
