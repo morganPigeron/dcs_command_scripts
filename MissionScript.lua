@@ -25,6 +25,77 @@ local function logger(log)
 end
 
 -- ***********************************
+-- Templates
+-- ***********************************
+
+MissionScript.TEMPLATE = {}
+-- https://wiki.hoggitworld.com/view/DCS_func_addGroup
+MissionScript.TEMPLATE["GroupGround"] = {
+    name = nil, -- required 
+    task = nil, -- required 
+    groupId = nil,
+    start_time = nil,
+    lateActivation = nil,
+    hidden = nil,
+    hiddenOnPlanner = nil,
+    hiddenOnMFD = nil,
+    route = nil,
+    visible = nil,
+    uncontrollable = nil,
+}
+
+MissionScript.TEMPLATE["GroupAir"] = {
+    name = nil, -- required 
+    task = nil, -- required 
+    groupId = nil,
+    start_time = nil,
+    lateActivation = nil,
+    hidden = nil,
+    hiddenOnPlanner = nil,
+    hiddenOnMFD = nil,
+    route = nil,
+    uncontrolled = nil,
+    modulation = nil,
+    frequency = nil,
+    communication = nil,
+}
+
+MissionScript.TEMPLATE["UnitAir"] = {
+    name = nil, --required
+    type = nil, --required
+    x = nil, --required
+    y = nil, --required
+    alt = nil, --required
+    alt_type = nil, --required 
+    speed = nil, --required
+    payload = nil, --required
+    callsign = nil, --required
+    unitId = nil,
+    heading = nil,
+    skill = nil,
+    livery_id = nil, --required
+    psi = nil, --required
+    onboard_num = nil, --required
+    ropeLength = nil, --required
+}
+
+MissionScript.TEMPLATE["UnitGround"] = {
+    name = nil, --required
+    type = nil, --required
+    x = nil, --required
+    y = nil, --required
+    unitId = nil,
+    heading = nil,
+    skill = nil,
+    coldAtStart = nil,
+    playerCanDrive = nil,
+}
+
+-- ***********************************
+-- Templates END
+-- ***********************************
+
+-- ***********************************
 -- GLOBAL END
 -- ***********************************
 
@@ -86,6 +157,29 @@ end
 -- ***********************************
 
 -- *********************************** 
+-- TEMPLATE related methods
+-- ***********************************
+
+function MissionScript.TEMPLATE:GenerateUnitOrGroup(templateName, parameters)
+    local template = self[templateName]
+
+    if template then
+        local newUnitOrGroup = {}
+        for key, value in pairs(template) do
+            -- Check if the parameter is provided, otherwise, use the template value
+            newUnitOrGroup[key] = parameters[key] or value
+        end
+        return newUnitOrGroup
+    else
+        return nil  -- Return nil or handle the error as needed
+    end
+end
+
+-- *********************************** 
+-- TEMPLATE related methods END
+-- ***********************************
+
+-- *********************************** 
 -- MARKER_TABLE related methods
 -- ***********************************
 
@@ -93,7 +187,6 @@ end
 -- looks like there is no way to get remove event
 -- so I will remove old one if text is equivalent
 function MissionScript.MARKER_TABLE:addMarker(marker_event)
-
     self[marker_event.idx] = {text = marker_event.text, pos = marker_event.pos}
 end
 
@@ -164,37 +257,27 @@ function MissionScript.GROUND_UNIT:create(unitName)
     local dcsName = self:getDCSName(unitName)
     return {
         ["visible"] = false,
-        ["taskSelected"] = true,
         ["route"] =
         {
         }, -- end of ["route"]
-        ["groupId"] = 2,
         ["tasks"] =
         {
         }, -- end of ["tasks"]
-        ["hidden"] = false,
         ["units"] =
         {
             [1] =
             {
                 ["type"] = dcsName,
-                ["transportable"] =
-                {
-                    ["randomTransportable"] = false,
-                }, -- end of ["transportable"]
-                ["unitId"] = 2,
                 ["skill"] = "Average",
                 ["y"] = 0,
                 ["x"] = 0,
                 ["name"] = "Ground Unit1",
                 ["playerCanDrive"] = true,
-                ["heading"] = 0,
             }, -- end of [1]
         },     -- end of ["units"]
         ["y"] = 0,
         ["x"] = 0,
         ["name"] = "Ground Group",
-        ["start_time"] = 0,
         ["task"] = "Ground Nothing",
     } -- end of [1]
 end
@@ -222,6 +305,91 @@ end
 -- *********************************** 
 -- GROUND_UNIT related methods END
 -- ***********************************
+
+-- NEED invisible FARP to land
+local function testSpawnFARP(event)
+
+    groundExam =
+    {
+        ["visible"] = false,
+        ["taskSelected"] = true,
+        ["route"] =
+        {
+        }, -- end of ["route"]
+        ["groupId"] = 2,
+        ["tasks"] =
+        {
+        }, -- end of ["tasks"]
+        ["hidden"] = false,
+        ["units"] =
+        {
+            [1] =
+            {
+                ["type"] = "M-109",
+                ["transportable"] =
+                {
+                    ["randomTransportable"] = false,
+                }, -- end of ["transportable"]
+                ["unitId"] = 9,
+                ["skill"] = "High",
+                ["y"] = 654317.3511118,
+                ["x"] = -292895.91688114,
+                ["name"] = "Ground-1-4",
+                ["playerCanDrive"] = true,
+                ["heading"] = 0,
+            }, -- end of [1]
+        }, -- end of ["units"]
+        ["y"] = 654317.3511118,
+        ["uncontrollable"] = false,
+        ["name"] = "Ground-1",
+        ["start_time"] = 0,
+        ["task"] = "Ground Nothing",
+        ["x"] = -292895.91688114,
+    } -- end of groundExam
+
+
+
+
+    local farp =
+    {
+        ["frequency"] = 127.5,
+        ["modulation"] = 0,
+        ["groupId"] = 5,
+        ["tasks"] =
+        {
+        }, -- end of ["tasks"]
+        ["route"] =
+        {
+        }, -- end of ["route"]
+        ["hidden"] = false,
+        ["units"] =
+        {
+            [1] =
+            {
+                ["type"] = "Static Invisible FARP-1",
+                ["name"] = "testfarp",
+                ["callsign"] =
+                {
+                    [1] = 2,
+                    [2] = 1,
+                    ["name"] = "Springfield11",
+                    [3] = 1,
+                }, -- end of ["callsign"]
+                ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
+                ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
+            }, -- end of [1]
+        }, -- end of ["units"]
+        ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
+        ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
+        ["radioSet"] = false,
+        ["name"] = "Rotary-1",
+        ["communication"] = true,
+        ["start_time"] = 0,
+        ["task"] = "Transport",
+        ["uncontrolled"] = false,
+    } -- end of Rotary-1
+    coalition.addGroup(MissionScript.getCountryIdFromCoalition(event), -1, farp)
+end
 
 local function testSpawnHeli(event)
     local heli =
@@ -280,14 +448,14 @@ local function testSpawnHeli(event)
                 }, -- end of [2]
                 [3] =
                 {
-                    ["alt"] = 13,
+                    ["alt"] = 0,
                     ["type"] = "Land",
-                    ["action"] = "Landing",
+                    ["action"] = "FromGroundArea",
                     ["alt_type"] = "BARO",
                     ["form"] = "Landing",
                     ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
                     ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
-                    ["speed"] = 41.666666666667,
+                    ["speed"] = 0,
                     ["task"] =
                     {
                         ["id"] = "ComboTask",
@@ -298,7 +466,6 @@ local function testSpawnHeli(event)
                             }, -- end of ["tasks"]
                         }, -- end of ["params"]
                     }, -- end of ["task"]
-                    ["airdromeId"] = 23,
                 }, -- end of [3]
             }, -- end of ["points"]
         }, -- end of ["route"]
@@ -312,7 +479,6 @@ local function testSpawnHeli(event)
                 ["alt_type"] = "BARO",
                 ["livery_id"] = "Mi-17 CIA Afghanistan",
                 ["skill"] = "High",
-                ["parking"] = "1",
                 ["ropeLength"] = 15,
                 ["speed"] = 0,
                 ["AddPropAircraft"] =
@@ -326,7 +492,6 @@ local function testSpawnHeli(event)
                 ["type"] = "Mi-8MT",
                 ["unitId"] = 13,
                 ["psi"] = 2.6422217449925,
-                ["parking_id"] = "1",
                 ["name"] = "Rotary-1-1",
                 ["payload"] =
                 {
@@ -361,6 +526,7 @@ local function testSpawnHeli(event)
         ["uncontrolled"] = false,
     } -- end of Rotary-1
     MissionScript.setUnitName(heli, "heli")
+    testSpawnFARP(event)
     coalition.addGroup(MissionScript.getCountryIdFromCoalition(event), Group.Category.HELICOPTER, heli)
 end
 
@@ -398,6 +564,7 @@ local function handleScriptCommand(event)
 
     elseif MissionScript.containsTextIgnoreCase(event.text, "marker") then
         MissionScript.MARKER_TABLE:print()
+
     end
 end
 
@@ -430,6 +597,10 @@ local function handleDebug(event)
         log[#log+1] = "\n--- Event mark remove --- "
         printTable(event, log)
     end
+
+    local blueStatics = coalition.getStaticObjects(2)
+    log[#log+1] = "\n--- Blue statics --- "
+    printTable(blueStatics, log)
 
     logger(log)
 end
