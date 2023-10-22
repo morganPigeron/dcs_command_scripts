@@ -293,86 +293,62 @@ end
 -- NEED invisible FARP to land
 local function testSpawnFARP(event)
 
-    local groundExam =
-    {
-        ["visible"] = false,
-        ["taskSelected"] = true,
-        ["route"] =
-        {
-        }, -- end of ["route"]
-        ["groupId"] = 2,
-        ["tasks"] =
-        {
-        }, -- end of ["tasks"]
-        ["hidden"] = false,
-        ["units"] =
-        {
-            [1] =
-            {
-                ["type"] = "M-109",
-                ["transportable"] =
-                {
-                    ["randomTransportable"] = false,
-                }, -- end of ["transportable"]
-                ["unitId"] = 9,
-                ["skill"] = "High",
-                ["y"] = 654317.3511118,
-                ["x"] = -292895.91688114,
-                ["name"] = "Ground-1-4",
-                ["playerCanDrive"] = true,
-                ["heading"] = 0,
-            }, -- end of [1]
-        }, -- end of ["units"]
-        ["y"] = 654317.3511118,
-        ["uncontrollable"] = false,
-        ["name"] = "Ground-1",
-        ["start_time"] = 0,
-        ["task"] = "Ground Nothing",
-        ["x"] = -292895.91688114,
-    } -- end of groundExam
+--    local farp =
+--    {
+--        ["frequency"] = 127.5,
+--        ["modulation"] = 0,
+--        ["groupId"] = 5,
+--        ["tasks"] =
+--        {
+--        }, -- end of ["tasks"]
+--        ["route"] =
+--        {
+--        }, -- end of ["route"]
+--        ["hidden"] = false,
+--        ["units"] =
+--        {
+--            [1] =
+--            {
+--                ["type"] = "FARP",
+--                ["name"] = "testfarp",
+--                ["callsign"] =
+--                {
+--                    [1] = 2,
+--                    [2] = 1,
+--                    ["name"] = "Springfield11",
+--                    [3] = 1,
+--                }, -- end of ["callsign"]
+--                ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
+--                ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
+--            }, -- end of [1]
+--        }, -- end of ["units"]
+--        ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
+--        ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
+--        ["radioSet"] = false,
+--        ["name"] = "Rotary-1",
+--        ["communication"] = true,
+--        ["start_time"] = 0,
+--        ["task"] = "Transport",
+--        ["uncontrolled"] = false,
+--    } -- end of Rotary-1
 
+    local group = MissionScript.TEMPLATE:newGround({
+        y = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
+        x = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
+    })
+    group["frequency"] = 127.5
+    group["modulation"] = 0
+    group["callsign"] = {name = "london"}
+    local unit = MissionScript.TEMPLATE:newUnit({
+        type = "FARP",
+        y = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
+        x = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
+        callsign = 1
+    })
+    group.units = {}
+    group.units[1] = unit
 
-
-
-    local farp =
-    {
-        ["frequency"] = 127.5,
-        ["modulation"] = 0,
-        ["groupId"] = 5,
-        ["tasks"] =
-        {
-        }, -- end of ["tasks"]
-        ["route"] =
-        {
-        }, -- end of ["route"]
-        ["hidden"] = false,
-        ["units"] =
-        {
-            [1] =
-            {
-                ["type"] = "Static Invisible FARP-1",
-                ["name"] = "testfarp",
-                ["callsign"] =
-                {
-                    [1] = 2,
-                    [2] = 1,
-                    ["name"] = "Springfield11",
-                    [3] = 1,
-                }, -- end of ["callsign"]
-                ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
-                ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
-            }, -- end of [1]
-        }, -- end of ["units"]
-        ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
-        ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
-        ["radioSet"] = false,
-        ["name"] = "Rotary-1",
-        ["communication"] = true,
-        ["start_time"] = 0,
-        ["task"] = "Transport",
-        ["uncontrolled"] = false,
-    } -- end of Rotary-1
-    coalition.addGroup(MissionScript.getCountryIdFromCoalition(event), -1, farp)
+    coalition.addGroup(MissionScript.getCountryIdFromCoalition(event), -1, group)
 end
 
 local function testSpawnHeli(event)
@@ -435,7 +411,7 @@ local function testSpawnHeli(event)
                     ["alt"] = 0,
                     ["type"] = "Land",
                     ["action"] = "FromGroundArea",
-                    ["alt_type"] = "BARO",
+                    ["alt_type"] = "RADIO",
                     ["form"] = "Landing",
                     ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
                     ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
@@ -518,6 +494,23 @@ end
 -- Command handling related methods 
 -- ***********************************
 
+-- Function to log the data recursively
+local function logClassData(class, indent, log)
+    indent = indent or 0
+    local prefix = string.rep("  ", indent) -- Adjust the spacing as needed
+
+    for key, value in pairs(class) do
+        if type(value) == "table" then
+            -- If the value is a table, log it and call the function recursively
+            log[#log+1] = "\n" .. prefix .. key .. " (Table):"
+            logClassData(value, indent + 1, log)
+        else
+            -- If the value is not a table, log it directly
+            log[#log+1] = "\n" .. prefix .. key .. " (Value): " .. tostring(value)
+        end
+    end
+end
+
 -- debug method to print event as a table in logger
 local function printTable(event, log)
     for key, value in pairs(event) do
@@ -582,10 +575,10 @@ local function handleDebug(event)
         printTable(event, log)
     end
 
-    local blueStatics = coalition.getStaticObjects(2)
-    log[#log+1] = "\n--- Blue statics --- "
-    printTable(blueStatics, log)
-
+    local blueStatics = coalition.getAirbases(coalition.side.BLUE)
+    log[#log+1] = "\n--- Blue groups --- "
+    --logClassData(blueStatics, 0, log)
+    logClassData(Airbase.getDesc(blueStatics[1]), 0, log)
     logger(log)
 end
 
