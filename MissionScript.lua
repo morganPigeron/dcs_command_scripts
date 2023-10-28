@@ -1,7 +1,7 @@
 -- ***********************************
 -- GLOBAL
 -- ***********************************
-
+local LOCK = true
 local DEBUG = false
 local MissionScript = {}
 
@@ -22,6 +22,21 @@ local function logger(log)
     if #log > 0 then
         trigger.action.outText(table.concat(log), 60)
     end
+end
+
+local function deepcopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[deepcopy(orig_key)] = deepcopy(orig_value)
+        end
+        setmetatable(copy, deepcopy(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
 end
 
 -- ***********************************
@@ -206,7 +221,7 @@ function MissionScript.MARKER_TABLE:findMarkerByText(searchText)
     local highestIdData = nil
 
     for id, markerData in pairs(self) do
-        -- in lua function are also in pairs self ...
+        -- TODO search text but without special characters
         if type(markerData) == "table" then
             if markerData.text == searchText and id > highestId then
                 highestId = id
@@ -351,7 +366,31 @@ local function testSpawnFARP(event)
     coalition.addGroup(MissionScript.getCountryIdFromCoalition(event), -1, group)
 end
 
-local function testSpawnHeli(event)
+local function SpawnMI8(event)
+    local startPos, endPos = event.text:find("heli", 1, true)
+    local waypointList = {}  -- Initialize an empty table to store the words
+    local waypointTemplate =
+    {
+        ["alt"] = 200,
+        ["type"] = "Turning Point",
+        ["action"] = "Turning Point",
+        ["alt_type"] = "BARO",
+        ["form"] = "Turning Point",
+        ["y"] = nil,
+        ["x"] = nil,
+        ["speed"] = 41.666666666667,
+        ["task"] =
+        {
+            ["id"] = "ComboTask",
+            ["params"] =
+            {
+                ["tasks"] =
+                {
+                }, -- end of ["tasks"]
+            }, -- end of ["params"]
+        }, -- end of ["task"]
+    } -- end of [2]
+
     local heli =
     {
         ["frequency"] = 127.5,
@@ -385,48 +424,6 @@ local function testSpawnHeli(event)
                         }, -- end of ["params"]
                     }, -- end of ["task"]
                 }, -- end of [1]
-                [2] =
-                {
-                    ["alt"] = 200,
-                    ["type"] = "Turning Point",
-                    ["action"] = "Turning Point",
-                    ["alt_type"] = "BARO",
-                    ["form"] = "Turning Point",
-                    ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
-                    ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
-                    ["speed"] = 41.666666666667,
-                    ["task"] =
-                    {
-                        ["id"] = "ComboTask",
-                        ["params"] =
-                        {
-                            ["tasks"] =
-                            {
-                            }, -- end of ["tasks"]
-                        }, -- end of ["params"]
-                    }, -- end of ["task"]
-                }, -- end of [2]
-                [3] =
-                {
-                    ["alt"] = 0,
-                    ["type"] = "Land",
-                    ["action"] = "FromGroundArea",
-                    ["alt_type"] = "RADIO",
-                    ["form"] = "Landing",
-                    ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
-                    ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
-                    ["speed"] = 0,
-                    ["task"] =
-                    {
-                        ["id"] = "ComboTask",
-                        ["params"] =
-                        {
-                            ["tasks"] =
-                            {
-                            }, -- end of ["tasks"]
-                        }, -- end of ["params"]
-                    }, -- end of ["task"]
-                }, -- end of [3]
             }, -- end of ["points"]
         }, -- end of ["route"]
         ["hidden"] = false,
@@ -485,8 +482,34 @@ local function testSpawnHeli(event)
         ["task"] = "Transport",
         ["uncontrolled"] = false,
     } -- end of Rotary-1
+
+    if startPos then
+        local remainingText = event.text:sub(endPos + 1)  -- Get the text after "heli"
+        -- Iterate and match words, and store them in the table
+        for word in remainingText:gmatch("%w+") do
+            table.insert(waypointList, word)
+        end
+    end
+
+
+    for _, waypoint in pairs(waypointList) do
+        local waypointMarker = MissionScript.MARKER_TABLE:findMarkerByText(waypoint)
+        if waypointMarker then
+            -- create a deepcopy of template 
+            local newPoint = deepcopy(waypointTemplate)
+            newPoint.x = waypointMarker.pos.x
+            newPoint.y = waypointMarker.pos.z
+            table.insert(heli.route.points, newPoint)
+        end
+    end
+
+    if #heli.route.points < 2 then
+        logger("Error waypoint not found\nMarker 1 text: waypoint\nMarker 2 text: heli waypoint")
+        return;
+    end
+
     MissionScript.setUnitName(heli, "heli")
-    testSpawnFARP(event)
+    -- TODO what happen with farp in dcs ?? testSpawnFARP(event)
     coalition.addGroup(MissionScript.getCountryIdFromCoalition(event), Group.Category.HELICOPTER, heli)
 end
 
@@ -524,6 +547,16 @@ end
 
 local function handleScriptCommand(event)
 
+    -- TODO find a better way to lock command 
+    if MissionScript.containsTextIgnoreCase(event.text, "master") then
+        LOCK = false
+    end
+
+    if LOCK then
+        return
+    end
+    -- lock command end
+
     if MissionScript.containsTextIgnoreCase(event.text, "DEBUG ON") then
         DEBUG = true
 
@@ -537,7 +570,7 @@ local function handleScriptCommand(event)
         MissionScript.printTable("Liste", MissionScript.GROUND_UNIT:getAllSpawnableUnits())
 
     elseif MissionScript.containsTextIgnoreCase(event.text, "heli") then
-        testSpawnHeli(event)
+        SpawnMI8(event)
 
     elseif MissionScript.containsTextIgnoreCase(event.text, "marker") then
         MissionScript.MARKER_TABLE:print()
