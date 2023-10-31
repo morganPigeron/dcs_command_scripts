@@ -15,6 +15,13 @@ MissionScript.NB_UNITS_CREATED = 0
 -- Ex navigate to marker "point B"
 MissionScript.MARKER_TABLE = {}
 
+-- hold info related to civil traffic.
+-- coalition.side.NEUTRAL
+-- country.name 82: UN_PEACEKEEPERS
+-- world.getAirbases() 
+MissionScript.CIVIL_TRAFFIC = {}
+MissionScript.CIVIL_TRAFFIC["Airbases"] = {}
+
 local function logger(log)
     if type(log) == "string" then
         log = {log} -- Wrap the string in a table
@@ -170,6 +177,177 @@ end
 -- ***********************************
 -- MissionScript related methods END
 -- ***********************************
+
+-- *********************************** 
+-- Civil traffic related methods
+-- ***********************************
+
+function MissionScript.CIVIL_TRAFFIC:InitAirbases()
+    -- https://wiki.hoggitworld.com/view/DCS_func_getAirbases
+    local base = world.getAirbases()
+    for i = 1, #base do
+        local info = {}
+        info.desc = Airbase.getDesc(base[i])
+        info.callsign = Airbase.getCallsign(base[i])
+        info.id = Airbase.getID(base[i])
+        info.cat = info.desc.category
+        info.point = Airbase.getPoint(base[i])
+
+        -- for now i want only airdrome so cat = 0
+        if info.cat == Airbase.Category.AIRDROME then
+            self["Airbases"][i] = info
+        end
+    end
+end
+
+function MissionScript.CIVIL_TRAFFIC:PrintAll()
+    local log = {}
+    log[#log+1] = "\nAirbases"
+    for _, info in pairs(self["Airbases"]) do
+        log[#log+1] = "\nCallsign: " .. info.callsign .. ", Category: " .. info.cat
+    end
+    logger(log)
+end
+
+
+function MissionScript.CIVIL_TRAFFIC:SelectRandomAirbases()
+    -- Create a copy of the airbases table
+    local airbasesCopy = {}
+    for _, info in pairs(self["Airbases"]) do
+        table.insert(airbasesCopy, info)
+    end
+
+    -- Check if there are at least 2 airbases in the table
+    if #airbasesCopy < 2 then
+        print("Not enough airbases to select two different ones.")
+        return nil, nil
+    end
+
+    -- Randomly shuffle the copied table
+    for i = #airbasesCopy, 2, -1 do
+        local j = math.random(1, i)
+        airbasesCopy[i], airbasesCopy[j] = airbasesCopy[j], airbasesCopy[i]
+    end
+
+    -- Select the first two airbases from the shuffled copy
+    local baseA = airbasesCopy[1]
+    local baseB = airbasesCopy[2]
+
+    return baseA, baseB
+end
+
+
+function MissionScript.CIVIL_TRAFFIC:SpawnPlane()
+    -- take 2 random airbase
+    local baseA, baseB = MissionScript.CIVIL_TRAFFIC:SelectRandomAirbases()
+
+    -- create plane Yak-40 start hot from parking and landing to other airbase 
+    local plane =
+    {
+        ["frequency"] = 305,
+        ["modulation"] = 0,
+        ["groupId"] = 3,
+        ["tasks"] =
+        {
+        }, -- end of ["tasks"]
+        ["route"] =
+        {
+            ["points"] =
+            {
+                [1] =
+                {
+                    ["type"] = "TakeOffParking",
+                    ["action"] = "From Parking Area",
+                    ["alt_type"] = "BARO",
+                    ["form"] = "From Parking Area",
+                    ["y"] = baseA.point.z,
+                    ["x"] = baseA.point.x,
+                    ["speed"] = 138.88888888889,
+                    ["task"] =
+                    {
+                        ["id"] = "ComboTask",
+                        ["params"] =
+                        {
+                            ["tasks"] =
+                            {
+                            }, -- end of ["tasks"]
+                        }, -- end of ["params"]
+                    }, -- end of ["task"]
+                    ["airdromeId"] = baseA.id,
+                }, -- end of [1]
+                [2] =
+                {
+                    ["type"] = "Land",
+                    ["action"] = "Landing",
+                    ["alt_type"] = "BARO",
+                    ["form"] = "Landing",
+                    ["y"] = baseB.point.z,
+                    ["x"] = baseB.point.x,
+                    ["speed"] = 138.88888888889,
+                    ["task"] =
+                    {
+                        ["id"] = "ComboTask",
+                        ["params"] =
+                        {
+                            ["tasks"] =
+                            {
+                            }, -- end of ["tasks"]
+                        }, -- end of ["params"]
+                    }, -- end of ["task"]
+                    ["airdromeId"] = baseB.id,
+                }, -- end of [2]
+            }, -- end of ["points"]
+        }, -- end of ["route"]
+        ["hidden"] = false,
+        ["units"] =
+        {
+            [1] =
+            {
+                ["hardpoint_racks"] = true,
+                ["alt_type"] = "BARO",
+                ["skill"] = "Excellent",
+                ["parking"] = "15",
+                ["speed"] = 138.88888888889,
+                ["AddPropAircraft"] =
+                {
+                }, -- end of ["AddPropAircraft"]
+                ["type"] = "Yak-40",
+                ["unitId"] = 10,
+                ["psi"] = 1.7703702498393,
+                ["parking_id"] = "30",
+                ["x"] = baseA.point.x,
+                ["name"] = "Aerial-1-1",
+                ["payload"] =
+                {
+                }, -- end of ["payload"]
+                ["onboard_num"] = "010",
+                ["callsign"] =
+                {
+                    [1] = 1,
+                    [2] = 1,
+                    ["name"] = "Enfield11",
+                    [3] = 1,
+                }, -- end of ["callsign"]
+                ["heading"] = -1.7703702498393,
+                ["y"] = baseA.point.z,
+            }, -- end of [1]
+        }, -- end of ["units"]
+        ["y"] = baseA.point.z,
+        ["radioSet"] = false,
+        ["name"] = "Aerial-1",
+        ["x"] = baseA.point.x,
+        ["start_time"] = 0,
+        ["uncontrolled"] = false,
+    } -- end of plane
+    MissionScript.setUnitName(plane, "plane")
+    coalition.addGroup(82, Group.Category.AIRPLANE, plane)
+end
+
+
+-- *********************************** 
+-- Civil traffic related methods END
+-- ***********************************
+
 
 -- *********************************** 
 -- TEMPLATE related methods
@@ -572,6 +750,11 @@ local function handleScriptCommand(event)
     elseif MissionScript.containsTextIgnoreCase(event.text, "heli") then
         SpawnMI8(event)
 
+    elseif MissionScript.containsTextIgnoreCase(event.text, "civil") then
+        for _ = 1, 5 do
+            MissionScript.CIVIL_TRAFFIC:SpawnPlane()
+        end
+
     elseif MissionScript.containsTextIgnoreCase(event.text, "marker") then
         MissionScript.MARKER_TABLE:print()
 
@@ -630,6 +813,9 @@ MissionScript.GROUND_UNIT:addUnitPair("IGLA", "SA-18 Igla manpad")
 MissionScript.GROUND_UNIT:addUnitPair("BTR", "BTR-80")
 MissionScript.GROUND_UNIT:addUnitPair("TUNGUSKA", "2S6 Tunguska")
 MissionScript.GROUND_UNIT:addUnitPair("SHILKA", "ZSU-23-4 Shilka")
+
+MissionScript.CIVIL_TRAFFIC:InitAirbases()
+--MissionScript.CIVIL_TRAFFIC:PrintAll()
 
 local eventHandler = {}
 function eventHandler:onEvent(event)
