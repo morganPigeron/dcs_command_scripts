@@ -1,6 +1,10 @@
 -- ***********************************
 -- GLOBAL
 -- ***********************************
+local GLOBAL = {
+    UN_PEACEKEEPERS = 82,
+}
+
 local LOCK = true
 local DEBUG = false
 local MissionScript = {}
@@ -17,14 +21,13 @@ MissionScript.MARKER_TABLE = {}
 
 -- hold info related to civil traffic.
 -- coalition.side.NEUTRAL
--- country.name 82: UN_PEACEKEEPERS
--- world.getAirbases() 
+-- world.getAirbases()
 MissionScript.CIVIL_TRAFFIC = {}
 MissionScript.CIVIL_TRAFFIC["Airbases"] = {}
 
 local function logger(log)
     if type(log) == "string" then
-        log = {log} -- Wrap the string in a table
+        log = { log } -- Wrap the string in a table
     end
     if #log > 0 then
         trigger.action.outText(table.concat(log), 60)
@@ -85,27 +88,27 @@ MissionScript.TEMPLATE["GroupAir"] = {
 MissionScript.TEMPLATE["UnitAir"] = {
     name = "unit air", --required
     type = "unit air", --required
-    x = 0, --required
-    y = 0, --required
-    alt = nil, --required
-    alt_type = nil, --required 
-    speed = nil, --required
-    payload = nil, --required
-    callsign = nil, --required
+    x = 0,             --required
+    y = 0,             --required
+    alt = nil,         --required
+    alt_type = nil,    --required
+    speed = nil,       --required
+    payload = nil,     --required
+    callsign = nil,    --required
     unitId = nil,
     heading = nil,
     skill = nil,
-    livery_id = nil, --required
-    psi = nil, --required
+    livery_id = nil,   --required
+    psi = nil,         --required
     onboard_num = nil, --required
-    ropeLength = nil, --required
+    ropeLength = nil,  --required
 }
 
 MissionScript.TEMPLATE["UnitGround"] = {
     name = "unit ground", --required
     type = "unit ground", --required
-    x = 0, --required
-    y = 0, --required
+    x = 0,                --required
+    y = 0,                --required
     unitId = nil,
     heading = nil,
     skill = nil,
@@ -133,15 +136,15 @@ function MissionScript.setUnitPosition(unit, x, y)
     return unit
 end
 
--- get unit struct and name string. 
+-- get unit struct and name string.
 -- use Global counter to suffix name by increment to avoid same name
 -- units in unit struct are also incremented to avoid same name
 function MissionScript.setUnitName(unit, name)
     for i, u in ipairs(unit.units) do
-    u.unitId = MissionScript.NB_UNITS_CREATED
-    u.name = name .. "-" .. i .. "-" .. MissionScript.NB_UNITS_CREATED
-    unit.name = "group-" .. name .. "-" .. i .. "-" .. MissionScript.NB_UNITS_CREATED
-    MissionScript.NB_UNITS_CREATED = MissionScript.NB_UNITS_CREATED + 1
+        u.unitId = MissionScript.NB_UNITS_CREATED
+        u.name = name .. "-" .. i .. "-" .. MissionScript.NB_UNITS_CREATED
+        unit.name = "group-" .. name .. "-" .. i .. "-" .. MissionScript.NB_UNITS_CREATED
+        MissionScript.NB_UNITS_CREATED = MissionScript.NB_UNITS_CREATED + 1
     end
     return unit
 end
@@ -178,10 +181,9 @@ end
 -- MissionScript related methods END
 -- ***********************************
 
--- *********************************** 
 -- Civil traffic related methods
 -- ***********************************
-
+-- Init airbase object with all airdrome
 function MissionScript.CIVIL_TRAFFIC:InitAirbases()
     -- https://wiki.hoggitworld.com/view/DCS_func_getAirbases
     local base = world.getAirbases()
@@ -200,16 +202,21 @@ function MissionScript.CIVIL_TRAFFIC:InitAirbases()
     end
 end
 
+-- Civil traffic related methods
+-- ***********************************
+-- Print all airbases in civil traffic table
 function MissionScript.CIVIL_TRAFFIC:PrintAll()
     local log = {}
-    log[#log+1] = "\nAirbases"
+    log[#log + 1] = "\nAirbases"
     for _, info in pairs(self["Airbases"]) do
-        log[#log+1] = "\nCallsign: " .. info.callsign .. ", Category: " .. info.cat
+        log[#log + 1] = "\nCallsign: " .. info.callsign .. ", Category: " .. info.cat
     end
     logger(log)
 end
 
-
+-- Civil traffic related methods
+-- ***********************************
+-- Print all airbases in civil traffic table
 function MissionScript.CIVIL_TRAFFIC:SelectRandomAirbases()
     -- Create a copy of the airbases table
     local airbasesCopy = {}
@@ -236,20 +243,34 @@ function MissionScript.CIVIL_TRAFFIC:SelectRandomAirbases()
     return baseA, baseB
 end
 
-
+-- Civil traffic related methods
+-- ***********************************
+-- Spawn a plane to fly from one airbase to another
 function MissionScript.CIVIL_TRAFFIC:SpawnPlane()
     -- take 2 random airbase
     local baseA, baseB = MissionScript.CIVIL_TRAFFIC:SelectRandomAirbases()
+    if baseA == nil or baseB == nil then
+        return
+    end
 
-    -- create plane Yak-40 start hot from parking and landing to other airbase 
+    -- create plane
+    local plane = MissionScript.CIVIL_TRAFFIC:CreatePlane(baseA, baseB)
+
+    -- Create a plane based on the provided parameters
+    MissionScript.setUnitName(plane, "plane")
+    coalition.addGroup(GLOBAL.UN_PEACEKEEPERS, Group.Category.AIRPLANE, plane)
+end
+
+-- Civil traffic related methods
+-- ***********************************
+-- create plane Yak-40 start hot from parking and landing to other airbase
+function MissionScript.CIVIL_TRAFFIC:CreatePlane(baseA, baseB)
     local plane =
     {
         ["frequency"] = 305,
         ["modulation"] = 0,
         ["groupId"] = 3,
-        ["tasks"] =
-        {
-        }, -- end of ["tasks"]
+        ["tasks"] = {},
         ["route"] =
         {
             ["points"] =
@@ -268,13 +289,11 @@ function MissionScript.CIVIL_TRAFFIC:SpawnPlane()
                         ["id"] = "ComboTask",
                         ["params"] =
                         {
-                            ["tasks"] =
-                            {
-                            }, -- end of ["tasks"]
-                        }, -- end of ["params"]
-                    }, -- end of ["task"]
+                            ["tasks"] = {},
+                        },
+                    },
                     ["airdromeId"] = baseA.id,
-                }, -- end of [1]
+                },
                 [2] =
                 {
                     ["type"] = "Land",
@@ -289,15 +308,13 @@ function MissionScript.CIVIL_TRAFFIC:SpawnPlane()
                         ["id"] = "ComboTask",
                         ["params"] =
                         {
-                            ["tasks"] =
-                            {
-                            }, -- end of ["tasks"]
-                        }, -- end of ["params"]
-                    }, -- end of ["task"]
+                            ["tasks"] = {},
+                        },
+                    },
                     ["airdromeId"] = baseB.id,
-                }, -- end of [2]
-            }, -- end of ["points"]
-        }, -- end of ["route"]
+                },
+            },
+        },
         ["hidden"] = false,
         ["units"] =
         {
@@ -308,18 +325,14 @@ function MissionScript.CIVIL_TRAFFIC:SpawnPlane()
                 ["skill"] = "Excellent",
                 ["parking"] = "15",
                 ["speed"] = 138.88888888889,
-                ["AddPropAircraft"] =
-                {
-                }, -- end of ["AddPropAircraft"]
+                ["AddPropAircraft"] = {},
                 ["type"] = "Yak-40",
                 ["unitId"] = 10,
                 ["psi"] = 1.7703702498393,
                 ["parking_id"] = "30",
                 ["x"] = baseA.point.x,
                 ["name"] = "Aerial-1-1",
-                ["payload"] =
-                {
-                }, -- end of ["payload"]
+                ["payload"] = {},
                 ["onboard_num"] = "010",
                 ["callsign"] =
                 {
@@ -327,29 +340,28 @@ function MissionScript.CIVIL_TRAFFIC:SpawnPlane()
                     [2] = 1,
                     ["name"] = "Enfield11",
                     [3] = 1,
-                }, -- end of ["callsign"]
+                },
                 ["heading"] = -1.7703702498393,
                 ["y"] = baseA.point.z,
-            }, -- end of [1]
-        }, -- end of ["units"]
+            },
+        },
         ["y"] = baseA.point.z,
         ["radioSet"] = false,
         ["name"] = "Aerial-1",
         ["x"] = baseA.point.x,
         ["start_time"] = 0,
         ["uncontrolled"] = false,
-    } -- end of plane
-    MissionScript.setUnitName(plane, "plane")
-    coalition.addGroup(82, Group.Category.AIRPLANE, plane)
+    }
+
+    return plane
 end
 
-
--- *********************************** 
+-- ***********************************
 -- Civil traffic related methods END
 -- ***********************************
 
 
--- *********************************** 
+-- ***********************************
 -- TEMPLATE related methods
 -- ***********************************
 
@@ -372,11 +384,11 @@ function MissionScript.TEMPLATE:newUnit(parameters)
     return self:GenerateUnitOrGroup("UnitGround", parameters)
 end
 
--- *********************************** 
+-- ***********************************
 -- TEMPLATE related methods END
 -- ***********************************
 
--- *********************************** 
+-- ***********************************
 -- MARKER_TABLE related methods
 -- ***********************************
 
@@ -384,12 +396,12 @@ end
 -- looks like there is no way to get remove event
 -- so I will remove old one if text is equivalent
 function MissionScript.MARKER_TABLE:addMarker(marker_event)
-    self[marker_event.idx] = {text = marker_event.text, pos = marker_event.pos}
+    self[marker_event.idx] = { text = marker_event.text, pos = marker_event.pos }
 end
 
 -- modify existing marker
 function MissionScript.MARKER_TABLE:modifyMarker(marker_event)
-    self[marker_event.idx] = {text = marker_event.text, pos = marker_event.pos}
+    self[marker_event.idx] = { text = marker_event.text, pos = marker_event.pos }
 end
 
 -- find marker by text
@@ -417,17 +429,17 @@ function MissionScript.MARKER_TABLE:print()
     for id, markerData in pairs(self) do
         -- in lua function are also in pairs self ...
         if type(markerData) == "table" then
-            log[#log+1] = "\nMarker id: " .. id .. " " .. markerData.text
+            log[#log + 1] = "\nMarker id: " .. id .. " " .. markerData.text
         end
     end
     logger(log)
 end
 
--- *********************************** 
+-- ***********************************
 -- MARKER_TABLE related methods END
 -- ***********************************
 
--- *********************************** 
+-- ***********************************
 -- GROUND_UNIT related methods
 -- ***********************************
 
@@ -453,7 +465,7 @@ end
 function MissionScript.GROUND_UNIT:create(unitName)
     local dcsName = self:getDCSName(unitName)
     local group = MissionScript.TEMPLATE:newGround({})
-    local unit = MissionScript.TEMPLATE:newUnit({type = dcsName})
+    local unit = MissionScript.TEMPLATE:newUnit({ type = dcsName })
     group.units = {}
     group.units[1] = unit
     return group
@@ -479,74 +491,13 @@ function MissionScript.GROUND_UNIT:getAllSpawnableUnits()
     return units
 end
 
--- *********************************** 
+-- ***********************************
 -- GROUND_UNIT related methods END
 -- ***********************************
 
--- NEED invisible FARP to land
-local function testSpawnFARP(event)
-
---    local farp =
---    {
---        ["frequency"] = 127.5,
---        ["modulation"] = 0,
---        ["groupId"] = 5,
---        ["tasks"] =
---        {
---        }, -- end of ["tasks"]
---        ["route"] =
---        {
---        }, -- end of ["route"]
---        ["hidden"] = false,
---        ["units"] =
---        {
---            [1] =
---            {
---                ["type"] = "FARP",
---                ["name"] = "testfarp",
---                ["callsign"] =
---                {
---                    [1] = 2,
---                    [2] = 1,
---                    ["name"] = "Springfield11",
---                    [3] = 1,
---                }, -- end of ["callsign"]
---                ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
---                ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
---            }, -- end of [1]
---        }, -- end of ["units"]
---        ["y"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
---        ["x"] = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
---        ["radioSet"] = false,
---        ["name"] = "Rotary-1",
---        ["communication"] = true,
---        ["start_time"] = 0,
---        ["task"] = "Transport",
---        ["uncontrolled"] = false,
---    } -- end of Rotary-1
-
-    local group = MissionScript.TEMPLATE:newGround({
-        y = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
-        x = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
-    })
-    group["frequency"] = 127.5
-    group["modulation"] = 0
-    group["callsign"] = {name = "london"}
-    local unit = MissionScript.TEMPLATE:newUnit({
-        type = "FARP",
-        y = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.z,
-        x = MissionScript.MARKER_TABLE:findMarkerByText("a").pos.x,
-        callsign = 1
-    })
-    group.units = {}
-    group.units[1] = unit
-
-    coalition.addGroup(MissionScript.getCountryIdFromCoalition(event), -1, group)
-end
-
 local function SpawnMI8(event)
     local startPos, endPos = event.text:find("heli", 1, true)
-    local waypointList = {}  -- Initialize an empty table to store the words
+    local waypointList = {} -- Initialize an empty table to store the words
     local waypointTemplate =
     {
         ["alt"] = 200,
@@ -565,9 +516,9 @@ local function SpawnMI8(event)
                 ["tasks"] =
                 {
                 }, -- end of ["tasks"]
-            }, -- end of ["params"]
-        }, -- end of ["task"]
-    } -- end of [2]
+            },     -- end of ["params"]
+        },         -- end of ["task"]
+    }              -- end of [2]
 
     local heli =
     {
@@ -599,11 +550,11 @@ local function SpawnMI8(event)
                             ["tasks"] =
                             {
                             }, -- end of ["tasks"]
-                        }, -- end of ["params"]
-                    }, -- end of ["task"]
-                }, -- end of [1]
-            }, -- end of ["points"]
-        }, -- end of ["route"]
+                        },     -- end of ["params"]
+                    },         -- end of ["task"]
+                },             -- end of [1]
+            },                 -- end of ["points"]
+        },                     -- end of ["route"]
         ["hidden"] = false,
         ["units"] =
         {
@@ -650,7 +601,7 @@ local function SpawnMI8(event)
                 ["y"] = event.pos.z,
                 ["x"] = event.pos.x,
             }, -- end of [1]
-        }, -- end of ["units"]
+        },     -- end of ["units"]
         ["y"] = event.pos.z,
         ["x"] = event.pos.x,
         ["radioSet"] = false,
@@ -662,7 +613,7 @@ local function SpawnMI8(event)
     } -- end of Rotary-1
 
     if startPos then
-        local remainingText = event.text:sub(endPos + 1)  -- Get the text after "heli"
+        local remainingText = event.text:sub(endPos + 1) -- Get the text after "heli"
         -- Iterate and match words, and store them in the table
         for word in remainingText:gmatch("%w+") do
             table.insert(waypointList, word)
@@ -673,7 +624,7 @@ local function SpawnMI8(event)
     for _, waypoint in pairs(waypointList) do
         local waypointMarker = MissionScript.MARKER_TABLE:findMarkerByText(waypoint)
         if waypointMarker then
-            -- create a deepcopy of template 
+            -- create a deepcopy of template
             local newPoint = deepcopy(waypointTemplate)
             newPoint.x = waypointMarker.pos.x
             newPoint.y = waypointMarker.pos.z
@@ -691,8 +642,8 @@ local function SpawnMI8(event)
     coalition.addGroup(MissionScript.getCountryIdFromCoalition(event), Group.Category.HELICOPTER, heli)
 end
 
--- *********************************** 
--- Command handling related methods 
+-- ***********************************
+-- Command handling related methods
 -- ***********************************
 
 -- Function to log the data recursively
@@ -703,11 +654,11 @@ local function logClassData(class, indent, log)
     for key, value in pairs(class) do
         if type(value) == "table" then
             -- If the value is a table, log it and call the function recursively
-            log[#log+1] = "\n" .. prefix .. key .. " (Table):"
+            log[#log + 1] = "\n" .. prefix .. key .. " (Table):"
             logClassData(value, indent + 1, log)
         else
             -- If the value is not a table, log it directly
-            log[#log+1] = "\n" .. prefix .. key .. " (Value): " .. tostring(value)
+            log[#log + 1] = "\n" .. prefix .. key .. " (Value): " .. tostring(value)
         end
     end
 end
@@ -715,7 +666,7 @@ end
 -- debug method to print event as a table in logger
 local function printTable(event, log)
     for key, value in pairs(event) do
-        log[#log+1] = "\n" .. key .. " : " .. tostring(value)
+        log[#log + 1] = "\n" .. key .. " : " .. tostring(value)
     end
 end
 
@@ -724,40 +675,22 @@ local function handleSpawnCommand(event)
 end
 
 local function handleScriptCommand(event)
-
-    -- TODO find a better way to lock command 
-    if MissionScript.containsTextIgnoreCase(event.text, "master") then
-        LOCK = false
-    end
-
-    if LOCK then
-        return
-    end
-    -- lock command end
-
     if MissionScript.containsTextIgnoreCase(event.text, "DEBUG ON") then
         DEBUG = true
-
     elseif MissionScript.containsTextIgnoreCase(event.text, "DEBUG OFF") then
         DEBUG = false
-
     elseif MissionScript.containsTextIgnoreCase(event.text, "DEBUG") then
         DEBUG = not DEBUG
-
     elseif MissionScript.containsTextIgnoreCase(event.text, "list") or MissionScript.containsTextIgnoreCase(event.text, "liste") then
         MissionScript.printTable("Liste", MissionScript.GROUND_UNIT:getAllSpawnableUnits())
-
     elseif MissionScript.containsTextIgnoreCase(event.text, "heli") then
         SpawnMI8(event)
-
     elseif MissionScript.containsTextIgnoreCase(event.text, "civil") then
         for _ = 1, 5 do
             MissionScript.CIVIL_TRAFFIC:SpawnPlane()
         end
-
     elseif MissionScript.containsTextIgnoreCase(event.text, "marker") then
         MissionScript.MARKER_TABLE:print()
-
     end
 end
 
@@ -774,35 +707,35 @@ end
 
 local function handleDebug(event)
     local log = {}
-    log[#log+1] = "\n*** event id => " .. event.id .. " ***"
+    log[#log + 1] = "\n*** event id => " .. event.id .. " ***"
 
     if event.id == world.event.S_EVENT_MARK_CHANGE then
-        log[#log+1] = "\n--- Event mark change --- "
+        log[#log + 1] = "\n--- Event mark change --- "
         printTable(event, log)
     end
 
     if event.id == world.event.S_EVENT_MARK_ADDED then
-        log[#log+1] = "\n--- Event mark added --- "
+        log[#log + 1] = "\n--- Event mark added --- "
         printTable(event, log)
     end
 
     if event.id == world.event.S_EVENT_MARK_REMOVE then
-        log[#log+1] = "\n--- Event mark remove --- "
+        log[#log + 1] = "\n--- Event mark remove --- "
         printTable(event, log)
     end
 
     local blueStatics = coalition.getAirbases(coalition.side.BLUE)
-    log[#log+1] = "\n--- Blue groups --- "
+    log[#log + 1] = "\n--- Blue groups --- "
     --logClassData(blueStatics, 0, log)
     logClassData(Airbase.getDesc(blueStatics[1]), 0, log)
     logger(log)
 end
 
--- *********************************** 
--- Command handling related methods END 
+-- ***********************************
+-- Command handling related methods END
 -- ***********************************
 
--- *********************************** 
+-- ***********************************
 -- Entry point
 -- Script start here
 -- ***********************************
@@ -815,11 +748,9 @@ MissionScript.GROUND_UNIT:addUnitPair("TUNGUSKA", "2S6 Tunguska")
 MissionScript.GROUND_UNIT:addUnitPair("SHILKA", "ZSU-23-4 Shilka")
 
 MissionScript.CIVIL_TRAFFIC:InitAirbases()
---MissionScript.CIVIL_TRAFFIC:PrintAll()
 
 local eventHandler = {}
 function eventHandler:onEvent(event)
-
     if event.id == world.event.S_EVENT_MARK_CHANGE then
         handleMarkChange(event)
     end
